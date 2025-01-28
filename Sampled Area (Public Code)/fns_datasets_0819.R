@@ -8,8 +8,8 @@
 ##############################################################
 
 #######data generation
-
-source("fns_population_gen_sampling_0623.R")
+dir <- "./Cho2024/OptimalPred2024/Sampled Area (Public Code)"
+source(file.path(dir, "fns_population_gen_sampling_0623.R"))
 
 sseexppi <- function(coef, ypi, y, x, areaspi){
   
@@ -88,6 +88,14 @@ gen.est.par = function(datsamp, par_method = "Ori"){
              error = function(e){TRUE}
   )
   
+# NDOE: Der eine optim()-Aufruf verwendet y, der andere yij. Bei der Erstellung der Daten wied aber nur yij erzeugt:
+#  datpop <- data.frame(area = areafacpop, strat = stratindpop, x = xij, 
+#                       probi = probi[areafacpop], probij = probij, yij = yij, Iareas = Iareas[areafacpop], Iunits = Iunits )
+#  datsamparea <- subset(datpop, Iareas == 1)
+#  datsamparea$ID <- 1:nrow(datsamparea)
+#  datnonsamparea <-subset(datpop, Iareas==0)
+#  datsamp  <- subset(datpop, Iareas == 1 & Iunits == 1)
+
   if(is.list(o)==TRUE){
     coefunit <- optim(summary(o)$parameters[,1], sseexppi, ypi = 1/datsamp$probij ,y = datsamp$y, x = datsamp$x, areaspi= datsamp$area,control=list(maxit = 100000))$par
   } else {

@@ -54,7 +54,7 @@ genpopPS <- function(D, sig2u, sig2e, beta0, beta1 , Nis, areafacpop, xij,trc=2.
   list(usD = usD, eij = eij, yij = yij)
 }
 
-## Generate the sample based on two-step UPsystematic
+## Generate the sample based on two-step sampling::UPsystematic
 
 gensampPS <- function(D, usD, eij, yij, sig2u, sig2e, stratindarea, stratindpop, Nis,areafacpop){
   # Generate pi
@@ -66,7 +66,7 @@ gensampPS <- function(D, usD, eij, yij, sig2u, sig2e, stratindarea, stratindpop,
   probi <- n_area_Stratum*zi/(ziUs[stratindarea])
   
   # Generate area indicator VVV
-  Iareas <- unlist(lapply(unique(stratindarea), function(i){ UPsystematic(probi[stratindarea == i])} ))
+  Iareas <- unlist(lapply(unique(stratindarea), function(i){ sampling::UPsystematic(probi[stratindarea == i])} ))
   names(Iareas) = 1:D
   samparea <- c(1:D)[Iareas == 1]
   
@@ -79,7 +79,7 @@ gensampPS <- function(D, usD, eij, yij, sig2u, sig2e, stratindarea, stratindpop,
   probij <- nis*zij/(zijUs[areafacpop])
   
   #Generate unit indicator
-  Iunits <- unlist(lapply(1:D, function(i){UPsystematic(probij[areafacpop == i])} )) # VVVVV
+  Iunits <- unlist(lapply(1:D, function(i){sampling::UPsystematic(probij[areafacpop == i])} )) # VVVVV
   Iunits[!(areafacpop %in% samparea)] <- 0
   
   list(probi = probi, Iareas = Iareas, samparea = samparea,  probij = probij, Iunits = Iunits)
