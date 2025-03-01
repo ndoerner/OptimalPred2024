@@ -86,7 +86,13 @@ sub.fct.0623 = function(D, sig2u, sig2e, beta0, beta1, Nis, areafacpop, xij, T.M
 	########################################
 	
 	# print(1)
+	# NDOE: dat.gen() generates the population data, the sample and also fits
+	# the sample model to the sampled data. Based on the fitted model, the
+	# proposed predictor is computed.
 	generated_data = dat.gen(D, sig2u, sig2e, beta0, beta1, Nis, areafacpop, xij,T.Method, stratindarea, stratindpop)
+	
+	# NDOE: über dieses assign() werden alle Elemente der Ergebnisliste aus generated_data / dat.gen
+	# im caller env zugewiesen -> erlaubt verwendung als Funktionsargumente
 	for(i in 1:length(generated_data)){ assign(names(generated_data)[i], generated_data[[i]]) }
 	gc()
 	
@@ -101,7 +107,7 @@ sub.fct.0623 = function(D, sig2u, sig2e, beta0, beta1, Nis, areafacpop, xij, T.M
 	################################################
 	## 2. EBP calculation of the proposed predictor:
 	################################################
-  EBP_M1_MC = EBP_MC_CI(BL, betahatsamp, sig2uhatsamp, sig2ehatsamp, xbaris, ybaris, gammahatis, datsamparea, coefunit, par_method = T.Method, hlist,popsampa)
+  EBP_M1_MC = EBP_MC(BL, betahatsamp, sig2uhatsamp, sig2ehatsamp, xbaris, ybaris, gammahatis, datsamparea, coefunit, par_method = T.Method, hlist)
 	EBP = EBP_M1_MC$estpssampa %>% as.matrix(.) %>% .[,T.par]
 	
 	TMSE = Tmse(EBP,TR,nh) 

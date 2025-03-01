@@ -149,7 +149,7 @@ gen.est.par = function(datsamp, par_method = "Ori"){
                       , gammahat = gammahatis.w 
                       , coefunit_12 = coefunit[1:2]
     ) 
-    
+    # Laut Mail ist dies der PEBP, aber eine andere Schaetzmethode als "W"
   }  else if (par_method == "AW"){
     
     betahatsamp.aw.d = lapply(1:length(xbaris.w), function(.){gammahatis.w[.]*(c(1,xbaris.w[.])%*%t(c(1,xbaris.w[.])))}) %>% Reduce("+",.)
@@ -166,7 +166,7 @@ gen.est.par = function(datsamp, par_method = "Ori"){
                       , gammahat = gammahatis.w 
                       , coefunit_12 = coefunit[1:2]
     )
-    
+    # Laut Mail ist dies der PEBP, aber eine andere Schaetzmethode als "AW"
   }else if (par_method == "W") {
     x.w.new = cbind((1-gammahatis.w)[as.character(datsamp$area)], datsamp$x-(gammahatis.w*xbaris.w)[as.character(datsamp$area)])
     betahatsamp.w.d = lapply(1:nrow(datsamp), function(.){samp.wij[.]*(c(1,datsamp$x[.])%*%t(x.w.new[.,]))}) %>% Reduce("+",.)
@@ -280,9 +280,11 @@ gen.vcov.jack.parallel = function(datsamp, par_method, core_num){ ## has been ch
   
   return((sampnum-1)* Reduce("+",par.sum)/sampnum)
 }
-
+# NDOE: Generiert die Population, die Stichprobe und schaetzt das LMM auf der
+# Stichprobe und liefert je nach Schaetzmethode die relevanten Parameterschaetzungen
+# und Mittelwerte etc.
 dat.gen = function(D, sig2u, sig2e, beta0, beta1, Nis, areafacpop, xij, par_method = "Ori",stratindarea, stratindpop, core_num){
-  
+  # NDOE: Hier Generierung von Daten und Stichprobe
   # Finite population Generation
   ranpopPS <- genpopPS(D, sig2u, sig2e, beta0, beta1, Nis, areafacpop, xij)
   # ranpopPS <- genpopPSNoTrunc(D, sig2u, sig2e, beta0, beta1, Nis, areafacpop, xij)
@@ -306,6 +308,7 @@ dat.gen = function(D, sig2u, sig2e, beta0, beta1, Nis, areafacpop, xij, par_meth
   
   datsamp  <- subset(datpop, Iareas == 1 & Iunits == 1)
   
+  # NDOE: Ende Generierung der Daten, 
   ##  Fit sample model to sampled data:
   
   lmersamp <- lmer(yij~x + (1|area), data = datsamp,REML=FALSE ) #f(yij|i=1,j=1)
@@ -320,8 +323,8 @@ dat.gen = function(D, sig2u, sig2e, beta0, beta1, Nis, areafacpop, xij, par_meth
     sig2uhatsamp <- VarCorr(lmersamp)[[1]][1]
   }
   
-  # ##### Implement EBUP simulation method:
-
+  # ##### Implement EBUP simulation method
+  #-> NDOE: das meint den EBLUP im BHF/NER
   betahatsamp <- fixef(lmersamp)
   nis <- tapply(datsamp$area, datsamp$area, length ) # should be length!!!!!!!!!!! not sum!!!!!!!!!!!
   n <-sum(nis)
@@ -332,6 +335,7 @@ dat.gen = function(D, sig2u, sig2e, beta0, beta1, Nis, areafacpop, xij, par_meth
   vcondus <- gammahatis*sig2ehatsamp/nis
   areaspi <- datsamp$area
   
+  # NDOE: Non-linear least squares, um das Gewichtsmodell zu schätzen
   #### estimated unit weight model parameters  ### CHANGED PART IT WORKS WELL for JACKKNIFE
   lmpireg <- lm(log(1/datsamp$probij )~ datsamp$x + datsamp$yij + as.factor(datsamp$area)-1)
   areaspi <- datsamp$area
@@ -350,11 +354,13 @@ dat.gen = function(D, sig2u, sig2e, beta0, beta1, Nis, areafacpop, xij, par_meth
   }
   # coefunit <- optim(lmpireg$coef, sseexppi, ypi = 1/datsamp$probij ,y = datsamp$yij, x = datsamp$x, areaspi= datsamp$area,control=list(maxit = 10000))$par
   
+  # NDOE: vcov.jack wird eventuell nirgends mehr verwendet (habe den workspace in VSC durchsucht)
   #update 02092021
   # vcov.jack = gen.vcov.jack.parallel(datsamp, par_method, core_num)  ## changed 08212021
   vcov.jack = gen.vcov.jack(datsamp, par_method)  ## changed 08212021
   
   ############################################################################
+  # NDOE: Pseudo EBP meint explizit den Guadarrama
   # Pseudo EBP function
   samp.wij = 1/datsamp$probij
   samp.norm.wij =  (1/datsamp$probij)/tapply(1/datsamp$probij,datsamp$area,sum)[as.character(datsamp$area)]
@@ -365,30 +371,36 @@ dat.gen = function(D, sig2u, sig2e, beta0, beta1, Nis, areafacpop, xij, par_meth
   
   gammahatis.w = sig2uhatsamp/(sig2uhatsamp + sig2ehatsamp*deltai2)
   
+  # NDOE: X'X
+  betahatsamp.aw.d = lapply(1:length(xbaris.w), function(x){gammahatis.w[x]*(c(1,xbaris.w[x])%*%t(c(1,xbaris.w[x])))}) %>% Reduce("+",.)
+  # NDOE: X'y
+  betahatsamp.aw.n = lapply(1:length(xbaris.w), function(x){gammahatis.w[x]*c(1,xbaris.w[x])*ybaris.w[x]}) %>% Reduce("+",.)
   
-  betahatsamp.aw.d = lapply(1:length(xbaris.w), function(.){gammahatis.w[.]*(c(1,xbaris.w[.])%*%t(c(1,xbaris.w[.])))}) %>% Reduce("+",.)
-  betahatsamp.aw.n = lapply(1:length(xbaris.w), function(.){gammahatis.w[.]*c(1,xbaris.w[.])*ybaris.w[.]}) %>% Reduce("+",.)
-  
+  # NDOE: (X'X)^{-1}X'y
   betahatsamp.aw = solve(betahatsamp.aw.d)%*%betahatsamp.aw.n
   
   
-  x.w.new = cbind((1-gammahatis.w)[as.character(datsamp$area)], datsamp$x-(gammahatis.w*xbaris.w)[as.character(datsamp$area)])
+  x.w.new = cbind(
+  	(1-gammahatis.w)[as.character(datsamp$area)]
+  	, datsamp$x-(gammahatis.w*xbaris.w)[as.character(datsamp$area)]
+  )
   
-  betahatsamp.w.d = lapply(1:nrow(datsamp), function(.){
-    samp.wij[.]*(c(1,datsamp$x[.])%*%t(x.w.new[.,])) }) %>% Reduce("+",.)
+  betahatsamp.w.d = lapply(1:nrow(datsamp), function(x){
+    samp.wij[x]*(c(1,datsamp$x[x])%*%t(x.w.new[x,])) }) %>% Reduce("+",.)
   
-  betahatsamp.w.n = lapply(1:nrow(datsamp), function(.){
-    samp.wij[.]*x.w.new[.,]*datsamp$yij[.] }) %>% Reduce("+",.)
+  betahatsamp.w.n = lapply(1:nrow(datsamp), function(x){
+    samp.wij[x]*x.w.new[x,]*datsamp$yij[x] }) %>% Reduce("+",.)
   
   betahatsamp.w = solve(betahatsamp.w.d)%*%betahatsamp.w.n
 
-  if(par_method == "Ori"){
+  if(par_method == "Ori"){ # Dieser hier nutzt ungewichtete Parameterschätzungen
+  	# NDOE: -> ist Cho, die nutzen ungew. betas!
     par.mu = c(betahatsamp, sig2uhatsamp, sig2ehatsamp, coefunit[1], coefunit[2])
-  }else if (par_method == "PS"){
+  }else if (par_method == "PS"){ # NDOE: P und S 2007
     par.mu = c(betahatsamp, sig2uhatsamp, sig2ehatsamp, coefunit[1], 0)
-  }else if (par_method == "AW"){
+  }else if (par_method == "AW"){ # NDOE: dies ist ein Guadarrama (laut Mail von Cho)
     par.mu = c(betahatsamp.aw, sig2uhatsamp, sig2ehatsamp, coefunit[1], 0)
-  }else if (par_method == "W"){
+  }else if (par_method == "W"){ # NDOE: dies ist ein anderer Guadarrama (laut Mail von Cho)
     par.mu = c(betahatsamp.w, sig2uhatsamp, sig2ehatsamp, coefunit[1], 0)
   }else {par.mu = "Wrong"; print(par.mu)}
   

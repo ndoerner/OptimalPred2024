@@ -6,7 +6,7 @@
 
 ## EBP calculation by Methods:
 
-
+# NDOE: Erwartungswert und Varianz fuer NV in MC des EBP
 cond.mu.v = function(betahat, sig2uhatsamp, sig2ehatsamp, xbaris.w, ybaris.w, gammahatis.w ){
   uhatis.w <- gammahatis.w*(ybaris.w - betahat[1] - betahat[2]*xbaris.w)
   vcondus.w <- (1-gammahatis.w)*sig2uhatsamp
@@ -15,13 +15,14 @@ cond.mu.v = function(betahat, sig2uhatsamp, sig2ehatsamp, xbaris.w, ybaris.w, ga
   
 }
 
+# NDOE: Zuege aus NV/Erzeugung der Bootstrap-Population
 gendata <- function(uhatis,vcondus,betahatsamp,datsamparea,sig2ehatsamp,b){
   ucondgen <- rnorm(length(uhatis), mean = uhatis, sd = sqrt(vcondus))
   names(ucondgen) <- names(uhatis)
   ycondgen <- b*sig2ehatsamp + betahatsamp[1] + betahatsamp[2]*datsamparea$x + ucondgen[as.character(datsamparea$area)] + rnorm(nrow(datsamparea), mean = 0, sd = sqrt(sig2ehatsamp))
   ycondgen
 }
-
+# NDOE: wird eigentlich nur genutzt, um den Simulationsteil des EBP durchzuefuehren
 EBP_MC = function(BL, betahatsamp, sig2uhatsamp, sig2ehatsamp, xbaris, ybaris, gammahatis, datsamparea, coefunit, par_method = "Ori", hlist){
   
   cond.moments = cond.mu.v(betahatsamp,sig2uhatsamp, sig2ehatsamp, xbaris, ybaris, gammahatis)
